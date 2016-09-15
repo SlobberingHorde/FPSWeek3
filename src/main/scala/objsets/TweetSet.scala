@@ -69,6 +69,8 @@ abstract class TweetSet {
     */
   def mostRetweeted: Tweet
 
+  def isEmpty: Boolean
+
   /**
     * Returns a list containing all tweets of this set, sorted by retweet count
     * in descending order. In other words, the head of the resulting list should
@@ -78,7 +80,13 @@ abstract class TweetSet {
     * Question: Should we implment this method here, or should it remain abstract
     * and be implemented in the subclasses?
     */
-  def descendingByRetweet: TweetList = ???
+  def descendingByRetweet: TweetList = {
+    if(isEmpty) Nil
+    else {
+      val mostret = mostRetweeted
+      new Cons(mostret,remove(mostret).descendingByRetweet)
+    }
+  }
   /**
     * The following methods are already implemented
     */
@@ -114,6 +122,11 @@ class Empty extends TweetSet {
   override def union(that: TweetSet): TweetSet = that
 
   override def mostRetweeted: Tweet = throw new NoSuchElementException("Called mostRetweeted on Empty")
+
+  def isEmpty: Boolean = true
+
+  override def descendingByRetweet: TweetList = Nil
+
   /**
     * The following methods are already implemented
     */
@@ -129,6 +142,8 @@ class Empty extends TweetSet {
 
 class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet {
 
+  def isEmpty: Boolean = false
+
   //compare this element and add it and return accumulator or just return the accumulator
   //pass that test to the left side of the tree, recursing down
   //pass the result of the left down the right side of the tree
@@ -140,20 +155,20 @@ class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet {
     left.union(right.union(that.incl(elem)))
   }
 
+
   override def mostRetweeted: Tweet = {
-    val leftMostRetweeted = left.mostRetweeted
-    val rightMostRetweeted = right.mostRetweeted
+    lazy val leftMost = left.mostRetweeted
+    lazy val rightMost = right.mostRetweeted
 
-    def numberOfRetweets(tweet: Tweet): Int =
-      if (tweet == null) -1
-      else tweet.retweets
-
-    if(elem.retweets > numberOfRetweets(leftMostRetweeted) && elem.retweets > numberOfRetweets(rightMostRetweeted))
-      this.elem
-    else if(numberOfRetweets(leftMostRetweeted) > numberOfRetweets(rightMostRetweeted))
-      leftMostRetweeted
+    if( !left.isEmpty && leftMost.retweets > elem.retweets )
+      if( !right.isEmpty && rightMost.retweets > leftMost.retweets )
+        rightMost
+      else
+        leftMost
+    else if( !right.isEmpty && rightMost.retweets > elem.retweets )
+      rightMost
     else
-      rightMostRetweeted
+      elem
   }
   /**
     * The following methods are already implemented
